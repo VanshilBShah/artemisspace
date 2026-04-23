@@ -95,10 +95,12 @@ function Moon({ scale = 1 }: { scale?: number }) {
     return new THREE.ShaderMaterial({
       vertexShader: `
         varying vec3 vNormal;
+        varying vec3 vObjNormal;
         varying vec3 vPos;
         varying vec3 vViewDir;
         void main() {
           vNormal = normalize(normalMatrix * normal);
+          vObjNormal = normalize(normal);
           vPos = position;
           vec4 mv = modelViewMatrix * vec4(position, 1.0);
           vViewDir = normalize(-mv.xyz);
@@ -108,6 +110,7 @@ function Moon({ scale = 1 }: { scale?: number }) {
       fragmentShader: `
         precision highp float;
         varying vec3 vNormal;
+        varying vec3 vObjNormal;
         varying vec3 vPos;
         varying vec3 vViewDir;
 
@@ -212,10 +215,13 @@ function Moon({ scale = 1 }: { scale?: number }) {
           float hy = heightAt(normalize(px + vec3(0.0, e, 0.0)));
           float hz = heightAt(normalize(px + vec3(0.0, 0.0, e)));
           vec3 grad = vec3(hx - h, hy - h, hz - h) / e;
-          // Project gradient onto tangent plane
-          vec3 tangentGrad = grad - dot(grad, px) * px;
-          // Perturb the world-space normal
-          vec3 N = normalize(vNormal - normalMatrix * tangentGrad * 1.6);
+          // Project gradient onto tangent plane (object space)
+          vec3 tangentGrad = grad - dot(grad, vObjNormal) * vObjNormal;
+          // Perturb in object space, then transform to view space using vNormal/vObjNormal ratio
+          vec3 perturbedObj = normalize(vObjNormal - tangentGrad * 1.6);
+          // Approximate world-space perturbation by applying same delta to vNormal
+          vec3 deltaObj = perturbedObj - vObjNormal;
+          vec3 N = normalize(vNormal + deltaObj * length(vNormal));
 
           // ---- Albedo ----
           float mare = mareMask(px);
