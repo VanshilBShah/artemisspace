@@ -94,11 +94,6 @@ function Earth({ scale = 1 }: { scale?: number }) {
         />
       </mesh>
 
-      {/* Atmosphere glow (slightly larger inverted sphere) */}
-      <mesh scale={1.18}>
-        <sphereGeometry args={[1, 64, 64]} />
-        <primitive object={atmosphereMat} attach="material" />
-      </mesh>
     </group>
   );
 }
