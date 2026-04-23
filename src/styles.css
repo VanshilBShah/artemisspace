@@ -5,17 +5,9 @@
 @custom-variant dark (&:is(.dark *));
 
 /*
- * Design system definition.
- *
- * The @theme inline block maps CSS custom properties to Tailwind utility
- * classes (e.g. --color-primary -> bg-primary, text-primary).
- *
- * The :root and .dark blocks define the actual color values using oklch.
- * All colors MUST use oklch format.
- *
- * To add a new semantic color:
- * 1. Add the variable to :root (light value) and .dark (dark value)
- * 2. Register it in @theme inline as --color-<name>: var(--<name>)
+ * Artemis II Design System — Deep Space / NASA Official
+ * Palette: deep space black, NASA navy #0B3D91, NASA red #FC3D21,
+ * cool greys, cyan glow #5BC0EB.
  */
 
 @theme inline {
@@ -23,9 +15,6 @@
   --radius-md: calc(var(--radius) - 2px);
   --radius-lg: var(--radius);
   --radius-xl: calc(var(--radius) + 4px);
-  --radius-2xl: calc(var(--radius) + 8px);
-  --radius-3xl: calc(var(--radius) + 12px);
-  --radius-4xl: calc(var(--radius) + 16px);
   --color-background: var(--background);
   --color-foreground: var(--foreground);
   --color-card: var(--card);
@@ -46,90 +35,69 @@
   --color-input: var(--input);
   --color-ring: var(--ring);
   --color-ring-offset-background: var(--background);
-  --color-chart-1: var(--chart-1);
-  --color-chart-2: var(--chart-2);
-  --color-chart-3: var(--chart-3);
-  --color-chart-4: var(--chart-4);
-  --color-chart-5: var(--chart-5);
-  --color-sidebar: var(--sidebar);
-  --color-sidebar-foreground: var(--sidebar-foreground);
-  --color-sidebar-primary: var(--sidebar-primary);
-  --color-sidebar-primary-foreground: var(--sidebar-primary-foreground);
-  --color-sidebar-accent: var(--sidebar-accent);
-  --color-sidebar-accent-foreground: var(--sidebar-accent-foreground);
-  --color-sidebar-border: var(--sidebar-border);
-  --color-sidebar-ring: var(--sidebar-ring);
+  --color-nasa-navy: var(--nasa-navy);
+  --color-nasa-red: var(--nasa-red);
+  --color-cyan-glow: var(--cyan-glow);
+  --color-space: var(--space);
+  --font-mono: "JetBrains Mono", ui-monospace, SFMono-Regular, Menlo, monospace;
+  --font-sans: "Inter", system-ui, -apple-system, "Helvetica Neue", sans-serif;
 }
 
 :root {
-  --radius: 0.625rem;
-  --background: oklch(1 0 0);
-  --foreground: oklch(0.129 0.042 264.695);
-  --card: oklch(1 0 0);
-  --card-foreground: oklch(0.129 0.042 264.695);
-  --popover: oklch(1 0 0);
-  --popover-foreground: oklch(0.129 0.042 264.695);
-  --primary: oklch(0.208 0.042 265.755);
-  --primary-foreground: oklch(0.984 0.003 247.858);
-  --secondary: oklch(0.968 0.007 247.896);
-  --secondary-foreground: oklch(0.208 0.042 265.755);
-  --muted: oklch(0.968 0.007 247.896);
-  --muted-foreground: oklch(0.554 0.046 257.417);
-  --accent: oklch(0.968 0.007 247.896);
-  --accent-foreground: oklch(0.208 0.042 265.755);
-  --destructive: oklch(0.577 0.245 27.325);
-  --destructive-foreground: oklch(0.984 0.003 247.858);
-  --border: oklch(0.929 0.013 255.508);
-  --input: oklch(0.929 0.013 255.508);
-  --ring: oklch(0.704 0.04 256.788);
-  --chart-1: oklch(0.646 0.222 41.116);
-  --chart-2: oklch(0.6 0.118 184.704);
-  --chart-3: oklch(0.398 0.07 227.392);
-  --chart-4: oklch(0.828 0.189 84.429);
-  --chart-5: oklch(0.769 0.188 70.08);
-  --sidebar: oklch(0.984 0.003 247.858);
-  --sidebar-foreground: oklch(0.129 0.042 264.695);
-  --sidebar-primary: oklch(0.208 0.042 265.755);
-  --sidebar-primary-foreground: oklch(0.984 0.003 247.858);
-  --sidebar-accent: oklch(0.968 0.007 247.896);
-  --sidebar-accent-foreground: oklch(0.208 0.042 265.755);
-  --sidebar-border: oklch(0.929 0.013 255.508);
-  --sidebar-ring: oklch(0.704 0.04 256.788);
-}
+  --radius: 0.375rem;
 
-.dark {
-  --background: oklch(0.129 0.042 264.695);
-  --foreground: oklch(0.984 0.003 247.858);
-  --card: oklch(0.208 0.042 265.755);
-  --card-foreground: oklch(0.984 0.003 247.858);
-  --popover: oklch(0.208 0.042 265.755);
-  --popover-foreground: oklch(0.984 0.003 247.858);
-  --primary: oklch(0.929 0.013 255.508);
-  --primary-foreground: oklch(0.208 0.042 265.755);
-  --secondary: oklch(0.279 0.041 260.031);
-  --secondary-foreground: oklch(0.984 0.003 247.858);
-  --muted: oklch(0.279 0.041 260.031);
-  --muted-foreground: oklch(0.704 0.04 256.788);
-  --accent: oklch(0.279 0.041 260.031);
-  --accent-foreground: oklch(0.984 0.003 247.858);
-  --destructive: oklch(0.704 0.191 22.216);
-  --destructive-foreground: oklch(0.984 0.003 247.858);
-  --border: oklch(1 0 0 / 10%);
-  --input: oklch(1 0 0 / 15%);
-  --ring: oklch(0.551 0.027 264.364);
-  --chart-1: oklch(0.488 0.243 264.376);
-  --chart-2: oklch(0.696 0.17 162.48);
-  --chart-3: oklch(0.769 0.188 70.08);
-  --chart-4: oklch(0.627 0.265 303.9);
-  --chart-5: oklch(0.645 0.246 16.439);
-  --sidebar: oklch(0.208 0.042 265.755);
-  --sidebar-foreground: oklch(0.984 0.003 247.858);
-  --sidebar-primary: oklch(0.488 0.243 264.376);
-  --sidebar-primary-foreground: oklch(0.984 0.003 247.858);
-  --sidebar-accent: oklch(0.279 0.041 260.031);
-  --sidebar-accent-foreground: oklch(0.984 0.003 247.858);
-  --sidebar-border: oklch(1 0 0 / 10%);
-  --sidebar-ring: oklch(0.551 0.027 264.364);
+  /* Deep space dark theme is the default for Artemis II */
+  --background: oklch(0.06 0.02 260);
+  --foreground: oklch(0.98 0.005 240);
+
+  --card: oklch(0.11 0.025 260 / 0.6);
+  --card-foreground: oklch(0.98 0.005 240);
+
+  --popover: oklch(0.09 0.025 260);
+  --popover-foreground: oklch(0.98 0.005 240);
+
+  /* NASA navy as primary */
+  --primary: oklch(0.42 0.18 264);
+  --primary-foreground: oklch(0.99 0.003 240);
+
+  --secondary: oklch(0.18 0.02 260);
+  --secondary-foreground: oklch(0.98 0.005 240);
+
+  --muted: oklch(0.16 0.02 260);
+  --muted-foreground: oklch(0.7 0.02 250);
+
+  --accent: oklch(0.78 0.14 220);
+  --accent-foreground: oklch(0.06 0.02 260);
+
+  /* NASA red */
+  --destructive: oklch(0.62 0.24 28);
+  --destructive-foreground: oklch(0.99 0.003 240);
+
+  --border: oklch(0.3 0.04 260 / 0.5);
+  --input: oklch(0.2 0.03 260);
+  --ring: oklch(0.78 0.14 220);
+
+  --nasa-navy: oklch(0.32 0.18 264);
+  --nasa-red: oklch(0.62 0.24 28);
+  --cyan-glow: oklch(0.78 0.14 220);
+  --space: oklch(0.04 0.015 260);
+
+  /* Gradients & effects */
+  --gradient-space: radial-gradient(
+    ellipse at center,
+    oklch(0.12 0.04 264) 0%,
+    oklch(0.04 0.015 260) 70%
+  );
+  --gradient-nebula: linear-gradient(
+    135deg,
+    oklch(0.32 0.18 264 / 0.4),
+    oklch(0.62 0.24 28 / 0.2),
+    oklch(0.04 0.015 260) 80%
+  );
+  --gradient-cyan: linear-gradient(135deg, oklch(0.78 0.14 220), oklch(0.42 0.18 264));
+  --shadow-glow: 0 0 40px oklch(0.78 0.14 220 / 0.3);
+  --shadow-red-glow: 0 0 30px oklch(0.62 0.24 28 / 0.4);
+  --transition-smooth: cubic-bezier(0.16, 1, 0.3, 1);
 }
 
 @layer base {
@@ -137,8 +105,107 @@
     border-color: var(--color-border);
   }
 
+  html {
+    color-scheme: dark;
+    scroll-behavior: smooth;
+  }
+
   body {
     background-color: var(--color-background);
     color: var(--color-foreground);
+    font-family: var(--font-sans);
+    -webkit-font-smoothing: antialiased;
+    overflow-x: hidden;
   }
+
+  ::selection {
+    background-color: var(--cyan-glow);
+    color: var(--space);
+  }
+}
+
+@layer utilities {
+  .font-mono {
+    font-family: var(--font-mono);
+  }
+
+  .text-glow {
+    text-shadow: 0 0 20px oklch(0.78 0.14 220 / 0.6);
+  }
+
+  .text-glow-red {
+    text-shadow: 0 0 20px oklch(0.62 0.24 28 / 0.6);
+  }
+
+  .bg-space-gradient {
+    background: var(--gradient-space);
+  }
+
+  .bg-nebula {
+    background: var(--gradient-nebula);
+  }
+
+  .border-glow {
+    box-shadow: var(--shadow-glow);
+  }
+
+  .border-red-glow {
+    box-shadow: var(--shadow-red-glow);
+  }
+
+  .clip-tag {
+    clip-path: polygon(0 0, 100% 0, 100% 70%, 90% 100%, 0 100%);
+  }
+}
+
+@keyframes twinkle {
+  0%,
+  100% {
+    opacity: 0.2;
+  }
+  50% {
+    opacity: 1;
+  }
+}
+
+@keyframes pulse-glow {
+  0%,
+  100% {
+    box-shadow: 0 0 0 0 oklch(0.78 0.14 220 / 0.7);
+  }
+  50% {
+    box-shadow: 0 0 0 12px oklch(0.78 0.14 220 / 0);
+  }
+}
+
+@keyframes fade-up {
+  from {
+    opacity: 0;
+    transform: translateY(20px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+@keyframes scan-line {
+  0% {
+    transform: translateY(-100%);
+  }
+  100% {
+    transform: translateY(100%);
+  }
+}
+
+.animate-twinkle {
+  animation: twinkle 3s ease-in-out infinite;
+}
+
+.animate-pulse-glow {
+  animation: pulse-glow 2s ease-out infinite;
+}
+
+.animate-fade-up {
+  animation: fade-up 0.8s var(--transition-smooth) both;
 }
