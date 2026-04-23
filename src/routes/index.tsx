@@ -1,17 +1,15 @@
 import { createFileRoute, Link } from "@tanstack/react-router";
-import { Suspense, lazy } from "react";
+import { Suspense, lazy, useEffect, useRef } from "react";
 import { Layout } from "@/components/Layout";
-import { Countdown } from "@/components/Countdown";
 import { Reveal } from "@/components/Reveal";
 import { Button } from "@/components/ui/button";
 import { ArrowRight, Rocket, Users, Target, Activity } from "lucide-react";
 import patch from "@/assets/artemis-patch.png";
 import moonImg from "@/assets/moon-earthrise.jpg";
-import orionImg from "@/assets/orion-capsule.jpg";
 import { missionFacts } from "@/data/missionData";
 
-const SpaceScene = lazy(() =>
-  import("@/components/three/SpaceScene").then((m) => ({ default: m.SpaceScene })),
+const ScrollScene = lazy(() =>
+  import("@/components/three/ScrollScene").then((m) => ({ default: m.ScrollScene })),
 );
 
 export const Route = createFileRoute("/")({
@@ -21,13 +19,13 @@ export const Route = createFileRoute("/")({
       {
         name: "description",
         content:
-          "Cinematic mission portal for NASA's Artemis II — the first crewed lunar flyby in over 50 years. Explore the crew, spacecraft, trajectory and live launch countdown.",
+          "Cinematic mission portal for NASA's Artemis II — the first crewed lunar flyby in over 50 years. Explore the crew, spacecraft, trajectory and mission progress.",
       },
       { property: "og:title", content: "Artemis II — Return to the Moon" },
       {
         property: "og:description",
         content:
-          "First crewed lunar mission in over 50 years. Live countdown, mission profile and crew details.",
+          "First crewed lunar mission in over 50 years. Mission profile, crew and progress.",
       },
       { property: "og:image", content: moonImg },
       { name: "twitter:image", content: moonImg },
@@ -38,89 +36,190 @@ export const Route = createFileRoute("/")({
 });
 
 function HomePage() {
+  // Pinned 3D canvas driven by scroll progress across the hero stack.
+  const progressRef = useRef(0);
+  const stageRef = useRef<HTMLDivElement>(null);
+
+  useEffect(() => {
+    const onScroll = () => {
+      const el = stageRef.current;
+      if (!el) return;
+      const rect = el.getBoundingClientRect();
+      const total = el.offsetHeight - window.innerHeight;
+      const scrolled = -rect.top;
+      progressRef.current = Math.max(0, Math.min(1, scrolled / Math.max(1, total)));
+    };
+    onScroll();
+    window.addEventListener("scroll", onScroll, { passive: true });
+    window.addEventListener("resize", onScroll);
+    return () => {
+      window.removeEventListener("scroll", onScroll);
+      window.removeEventListener("resize", onScroll);
+    };
+  }, []);
+
   return (
     <Layout immersive>
-      {/* HERO with 3D Earth */}
-      <section className="relative flex min-h-screen items-center justify-center overflow-hidden">
-        <div className="absolute inset-0">
+      {/* SCROLL STAGE: 5 stacked viewport-height sections share one pinned 3D canvas */}
+      <div ref={stageRef} className="relative">
+        {/* Pinned canvas */}
+        <div className="pointer-events-none sticky top-0 h-screen w-full">
           <Suspense fallback={<div className="bg-space-gradient h-full w-full" />}>
-            <SpaceScene variant="earth" />
+            <ScrollScene progressRef={progressRef} />
           </Suspense>
+          {/* Subtle vignette */}
+          <div className="from-background/70 via-background/0 to-background/80 pointer-events-none absolute inset-0 bg-gradient-to-b" />
         </div>
 
-        {/* Vignette */}
-        <div className="from-background/80 via-background/0 to-background/90 pointer-events-none absolute inset-0 bg-gradient-to-b" />
+        {/* Overlay sections — each one viewport tall, scroll past to advance the scene */}
+        <div className="relative -mt-[100vh]">
+          {/* SCENE 1 — HERO */}
+          <section className="flex h-screen items-center justify-center px-6">
+            <div className="mx-auto max-w-4xl text-center">
+              <Reveal>
+                <div className="mb-6 flex justify-center">
+                  <img
+                    src={patch}
+                    alt="Artemis II mission patch"
+                    width={120}
+                    height={120}
+                    className="h-24 w-24 sm:h-32 sm:w-32"
+                  />
+                </div>
+              </Reveal>
+              <Reveal delay={150}>
+                <p className="text-accent font-mono text-xs tracking-[0.5em] uppercase sm:text-sm">
+                  NASA · CSA · ESA — Mission AR-002
+                </p>
+              </Reveal>
+              <Reveal delay={300}>
+                <h1 className="mt-4 text-5xl font-bold tracking-tight sm:text-7xl md:text-8xl">
+                  ARTEMIS{" "}
+                  <span className="from-accent text-glow bg-gradient-to-r to-white bg-clip-text text-transparent">
+                    II
+                  </span>
+                </h1>
+              </Reveal>
+              <Reveal delay={450}>
+                <p className="text-muted-foreground mx-auto mt-6 max-w-2xl text-base sm:text-lg">
+                  Four humans. Ten days. A free-return flight beyond the far side of the Moon —
+                  the first crewed lunar voyage in more than half a century.
+                </p>
+              </Reveal>
+              <Reveal delay={600}>
+                <div className="pointer-events-auto mt-10 flex flex-wrap justify-center gap-3">
+                  <Button asChild size="lg" className="bg-primary hover:bg-primary/80 group">
+                    <Link to="/mission">
+                      Explore the Mission
+                      <ArrowRight className="ml-1 transition-transform group-hover:translate-x-1" />
+                    </Link>
+                  </Button>
+                  <Button
+                    asChild
+                    size="lg"
+                    variant="outline"
+                    className="border-accent/40 text-accent hover:bg-accent/10"
+                  >
+                    <Link to="/progress">Mission Status</Link>
+                  </Button>
+                </div>
+              </Reveal>
+              <Reveal delay={800}>
+                <div className="text-muted-foreground mt-16 font-mono text-[10px] tracking-[0.4em] uppercase">
+                  Scroll ↓
+                </div>
+              </Reveal>
+            </div>
+          </section>
 
-        <div className="relative z-10 mx-auto max-w-5xl px-6 text-center">
-          <Reveal>
-            <div className="mb-6 flex justify-center">
-              <img
-                src={patch}
-                alt="Artemis II mission patch"
-                width={120}
-                height={120}
-                className="h-24 w-24 sm:h-32 sm:w-32"
-              />
+          {/* SCENE 2 — Mission intro */}
+          <section className="flex h-screen items-center px-6">
+            <div className="mx-auto max-w-6xl">
+              <Reveal>
+                <div className="bg-background/30 max-w-xl rounded-lg p-2 backdrop-blur-sm md:ml-auto">
+                  <p className="text-accent font-mono text-xs tracking-[0.4em] uppercase">
+                    Departure
+                  </p>
+                  <h2 className="mt-3 text-4xl font-bold sm:text-5xl">
+                    Leaving the cradle.
+                  </h2>
+                  <p className="text-muted-foreground mt-4 leading-relaxed">
+                    Orion lifts off from Kennedy Space Center atop the Space Launch System — the
+                    most powerful rocket NASA has ever flown. After Earth orbit, an 18-minute burn
+                    sets a course for the Moon.
+                  </p>
+                </div>
+              </Reveal>
             </div>
-          </Reveal>
-          <Reveal delay={150}>
-            <p className="text-accent font-mono text-xs tracking-[0.5em] uppercase sm:text-sm">
-              NASA · CSA · ESA — Mission AR-002
-            </p>
-          </Reveal>
-          <Reveal delay={300}>
-            <h1 className="mt-4 text-5xl font-bold tracking-tight sm:text-7xl md:text-8xl">
-              ARTEMIS{" "}
-              <span className="from-accent text-glow bg-gradient-to-r to-white bg-clip-text text-transparent">
-                II
-              </span>
-            </h1>
-          </Reveal>
-          <Reveal delay={450}>
-            <p className="text-muted-foreground mx-auto mt-6 max-w-2xl text-base sm:text-lg">
-              Four humans. Ten days. A free-return flight beyond the far side of the Moon — the
-              first crewed lunar voyage in more than half a century.
-            </p>
-          </Reveal>
-          <Reveal delay={600}>
-            <div className="border-border/40 bg-background/40 mt-10 inline-flex flex-col items-center rounded-lg border px-6 py-4 backdrop-blur-md">
-              <span className="text-muted-foreground font-mono text-[10px] tracking-[0.3em] uppercase">
-                T-Minus to Launch
-              </span>
-              <div className="mt-3">
-                <Countdown />
-              </div>
+          </section>
+
+          {/* SCENE 3 — Trajectory */}
+          <section className="flex h-screen items-center px-6">
+            <div className="mx-auto max-w-6xl">
+              <Reveal>
+                <div className="bg-background/30 max-w-xl rounded-lg p-2 backdrop-blur-sm">
+                  <p className="text-accent font-mono text-xs tracking-[0.4em] uppercase">
+                    Trans-lunar Cruise
+                  </p>
+                  <h2 className="mt-3 text-4xl font-bold sm:text-5xl">
+                    A free-return arc.
+                  </h2>
+                  <p className="text-muted-foreground mt-4 leading-relaxed">
+                    Gravity does the work. Orion coasts along a hybrid free-return trajectory that
+                    will sling the crew around the far side of the Moon and back to Earth without
+                    a single main-engine burn.
+                  </p>
+                </div>
+              </Reveal>
             </div>
-          </Reveal>
-          <Reveal delay={750}>
-            <div className="mt-10 flex flex-wrap justify-center gap-3">
-              <Button asChild size="lg" className="bg-primary hover:bg-primary/80 group">
-                <Link to="/mission">
-                  Explore the Mission
-                  <ArrowRight className="ml-1 transition-transform group-hover:translate-x-1" />
-                </Link>
-              </Button>
-              <Button
-                asChild
-                size="lg"
-                variant="outline"
-                className="border-accent/40 text-accent hover:bg-accent/10"
-              >
-                <Link to="/progress">Mission Status</Link>
-              </Button>
+          </section>
+
+          {/* SCENE 4 — Spacecraft / Orion mid-flight */}
+          <section className="flex h-screen items-center px-6">
+            <div className="mx-auto max-w-6xl">
+              <Reveal>
+                <div className="bg-background/30 max-w-xl rounded-lg p-2 backdrop-blur-sm md:ml-auto">
+                  <p className="text-accent font-mono text-xs tracking-[0.4em] uppercase">
+                    The Spacecraft
+                  </p>
+                  <h2 className="mt-3 text-4xl font-bold sm:text-5xl">Orion in deep space.</h2>
+                  <p className="text-muted-foreground mt-4 leading-relaxed">
+                    Crew module, European Service Module, and a heat shield rated for lunar return
+                    velocities. Built to keep four humans alive ~230,000 miles from home.
+                  </p>
+                  <Button asChild variant="link" className="text-accent mt-2 px-0">
+                    <Link to="/spacecraft">
+                      Explore the hardware <ArrowRight className="ml-1 h-4 w-4" />
+                    </Link>
+                  </Button>
+                </div>
+              </Reveal>
             </div>
-          </Reveal>
+          </section>
+
+          {/* SCENE 5 — Arrival at the Moon */}
+          <section className="flex h-screen items-center px-6">
+            <div className="mx-auto max-w-6xl">
+              <Reveal>
+                <div className="bg-background/30 max-w-xl rounded-lg p-2 backdrop-blur-sm">
+                  <p className="text-accent font-mono text-xs tracking-[0.4em] uppercase">
+                    Lunar Flyby
+                  </p>
+                  <h2 className="mt-3 text-4xl font-bold sm:text-5xl">
+                    4,600 miles past the far side.
+                  </h2>
+                  <p className="text-muted-foreground mt-4 leading-relaxed">
+                    On day four, the crew passes farther from Earth than any human has ever
+                    traveled — then begins the long coast home.
+                  </p>
+                </div>
+              </Reveal>
+            </div>
+          </section>
         </div>
+      </div>
 
-        {/* Scroll cue */}
-        <div className="absolute bottom-8 left-1/2 -translate-x-1/2">
-          <div className="border-border/60 flex h-10 w-6 justify-center rounded-full border pt-2">
-            <div className="bg-accent h-2 w-1 animate-bounce rounded-full" />
-          </div>
-        </div>
-      </section>
-
-      {/* MISSION INTRO */}
+      {/* MISSION FACTS */}
       <section className="relative px-6 py-32">
         <div className="mx-auto grid max-w-6xl items-center gap-16 md:grid-cols-2">
           <Reveal>
@@ -136,11 +235,7 @@ function HomePage() {
               of the Moon on a free-return trajectory — confirming that every Artemis system is
               ready for humans before the lunar landing on Artemis III.
             </p>
-            <Button
-              asChild
-              variant="link"
-              className="text-accent mt-4 px-0"
-            >
+            <Button asChild variant="link" className="text-accent mt-4 px-0">
               <Link to="/mission">
                 Read the full profile <ArrowRight className="ml-1 h-4 w-4" />
               </Link>
@@ -170,70 +265,6 @@ function HomePage() {
                 </div>
               ))}
             </div>
-          </Reveal>
-        </div>
-      </section>
-
-      {/* TRAJECTORY 3D SCENE */}
-      <section className="relative h-[80vh] overflow-hidden">
-        <div className="absolute inset-0">
-          <Suspense fallback={null}>
-            <SpaceScene variant="trajectory" />
-          </Suspense>
-        </div>
-        <div className="from-background pointer-events-none absolute inset-x-0 top-0 h-32 bg-gradient-to-b to-transparent" />
-        <div className="from-background pointer-events-none absolute inset-x-0 bottom-0 h-32 bg-gradient-to-t to-transparent" />
-        <div className="relative z-10 mx-auto flex h-full max-w-6xl items-end px-6 pb-16">
-          <Reveal>
-            <p className="text-accent font-mono text-xs tracking-[0.4em] uppercase">
-              The Trajectory
-            </p>
-            <h2 className="mt-3 max-w-2xl text-4xl font-bold sm:text-5xl">
-              Earth → far side of the Moon → splashdown.
-            </h2>
-            <p className="text-muted-foreground mt-4 max-w-xl">
-              A hybrid free-return path that lets gravity do the work — Orion loops behind the
-              Moon and is slung back toward Earth without firing its main engine.
-            </p>
-          </Reveal>
-        </div>
-      </section>
-
-      {/* SPACECRAFT */}
-      <section className="relative px-6 py-32">
-        <div className="mx-auto grid max-w-6xl items-center gap-16 md:grid-cols-2">
-          <Reveal>
-            <div className="relative h-[420px] overflow-hidden rounded-lg">
-              <Suspense
-                fallback={
-                  <img
-                    src={orionImg}
-                    alt="Orion spacecraft"
-                    width={1600}
-                    height={1024}
-                    loading="lazy"
-                    className="h-full w-full object-cover"
-                  />
-                }
-              >
-                <SpaceScene variant="spacecraft" />
-              </Suspense>
-            </div>
-          </Reveal>
-          <Reveal delay={200}>
-            <p className="text-accent font-mono text-xs tracking-[0.4em] uppercase">
-              The Spacecraft
-            </p>
-            <h2 className="mt-4 text-4xl font-bold sm:text-5xl">Orion + SLS Block 1.</h2>
-            <p className="text-muted-foreground mt-6">
-              A 322-foot Space Launch System carries the Orion crew vehicle, its European Service
-              Module, and the Launch Abort System on the most powerful rocket NASA has ever flown.
-            </p>
-            <Button asChild variant="link" className="text-accent mt-4 px-0">
-              <Link to="/spacecraft">
-                Explore the hardware <ArrowRight className="ml-1 h-4 w-4" />
-              </Link>
-            </Button>
           </Reveal>
         </div>
       </section>

@@ -61,7 +61,7 @@ function MissionPage() {
       <section className="relative h-[60vh] overflow-hidden">
         <div className="absolute inset-0">
           <Suspense fallback={null}>
-            <SpaceScene variant="trajectory" />
+            <SpaceScene variant="moon" />
           </Suspense>
         </div>
         <div className="from-background absolute inset-0 bg-gradient-to-b via-transparent to-transparent" />
