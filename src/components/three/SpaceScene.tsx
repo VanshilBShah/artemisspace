@@ -1,290 +1,201 @@
 import { useRef, useMemo, Suspense } from "react";
-import { Canvas, useFrame } from "@react-three/fiber";
-import { Stars, Float } from "@react-three/drei";
+import { Canvas, useFrame, useLoader } from "@react-three/fiber";
+import { Stars, Float, Billboard } from "@react-three/drei";
 import * as THREE from "three";
 
-// ---------- Procedural Earth ----------
+// ---------- Real-photo Earth (billboarded disc with atmospheric glow) ----------
 function Earth({ scale = 1 }: { scale?: number }) {
-  const ref = useRef<THREE.Mesh>(null);
-  const cloudRef = useRef<THREE.Mesh>(null);
+  const groupRef = useRef<THREE.Group>(null);
+  const texture = useLoader(THREE.TextureLoader, "/textures/earth.avif");
 
-  useFrame((_, dt) => {
-    if (ref.current) ref.current.rotation.y += dt * 0.05;
-    if (cloudRef.current) cloudRef.current.rotation.y += dt * 0.07;
-  });
+  useMemo(() => {
+    texture.colorSpace = THREE.SRGBColorSpace;
+    texture.anisotropy = 8;
+  }, [texture]);
 
-  const earthMaterial = useMemo(() => {
+  // Custom shader: render the photo as a circular disc with darkened edges removed,
+  // add a cyan atmospheric rim that fades outward.
+  const discMaterial = useMemo(() => {
     return new THREE.ShaderMaterial({
-      uniforms: { uTime: { value: 0 } },
+      transparent: true,
+      depthWrite: false,
+      uniforms: {
+        uTex: { value: texture },
+      },
       vertexShader: `
-        varying vec3 vNormal;
-        varying vec3 vPos;
+        varying vec2 vUv;
         void main() {
-          vNormal = normalize(normalMatrix * normal);
-          vPos = position;
+          vUv = uv;
           gl_Position = projectionMatrix * modelViewMatrix * vec4(position, 1.0);
         }
       `,
       fragmentShader: `
-        varying vec3 vNormal;
-        varying vec3 vPos;
-        float hash(vec3 p) { return fract(sin(dot(p, vec3(12.9898,78.233,45.164))) * 43758.5453); }
-        float noise(vec3 p) {
-          vec3 i = floor(p); vec3 f = fract(p); f = f*f*(3.0-2.0*f);
-          float n000 = hash(i);
-          float n100 = hash(i+vec3(1,0,0));
-          float n010 = hash(i+vec3(0,1,0));
-          float n110 = hash(i+vec3(1,1,0));
-          float n001 = hash(i+vec3(0,0,1));
-          float n101 = hash(i+vec3(1,0,1));
-          float n011 = hash(i+vec3(0,1,1));
-          float n111 = hash(i+vec3(1,1,1));
-          return mix(
-            mix(mix(n000,n100,f.x), mix(n010,n110,f.x), f.y),
-            mix(mix(n001,n101,f.x), mix(n011,n111,f.x), f.y),
-            f.z
-          );
-        }
+        precision highp float;
+        varying vec2 vUv;
+        uniform sampler2D uTex;
         void main() {
-          float n = noise(vPos * 2.0) * 0.6 + noise(vPos * 6.0) * 0.4;
-          vec3 ocean = vec3(0.02, 0.18, 0.42);
-          vec3 land = vec3(0.16, 0.42, 0.22);
-          vec3 ice = vec3(0.95, 0.97, 1.0);
-          vec3 col = mix(ocean, land, smoothstep(0.45, 0.55, n));
-          float pole = smoothstep(0.78, 0.95, abs(vPos.y));
-          col = mix(col, ice, pole);
-          vec3 lightDir = normalize(vec3(1.0, 0.6, 0.8));
-          float lambert = max(dot(vNormal, lightDir), 0.0);
-          float ambient = 0.12;
-          col *= (lambert + ambient);
-          float rim = 1.0 - max(dot(vNormal, vec3(0.0, 0.0, 1.0)), 0.0);
-          rim = pow(rim, 2.5);
-          col += vec3(0.3, 0.55, 0.95) * rim * 0.7;
-          gl_FragColor = vec4(col, 1.0);
+          // Distance from center for circular masking
+          vec2 c = vUv - 0.5;
+          float r = length(c) * 2.0;
+          if (r > 1.0) discard;
+
+          // Sample photo
+          vec4 tex = texture2D(uTex, vUv);
+
+          // Boost saturation/contrast slightly so it pops on dark space
+          vec3 col = tex.rgb;
+          float luma = dot(col, vec3(0.299, 0.587, 0.114));
+          col = mix(vec3(luma), col, 1.15);
+          col *= 1.05;
+
+          // Soft alpha falloff at the very edge for clean anti-aliasing
+          float alpha = smoothstep(1.0, 0.985, r);
+
+          gl_FragColor = vec4(col, alpha);
         }
       `,
     });
-  }, []);
+  }, [texture]);
 
-  return (
-    <group scale={scale}>
-      <mesh ref={ref}>
-        <sphereGeometry args={[1, 96, 96]} />
-        <primitive object={earthMaterial} attach="material" />
-      </mesh>
-      <mesh ref={cloudRef} scale={1.012}>
-        <sphereGeometry args={[1, 64, 64]} />
-        <meshStandardMaterial color="#ffffff" transparent opacity={0.08} depthWrite={false} />
-      </mesh>
-      <mesh scale={1.08}>
-        <sphereGeometry args={[1, 32, 32]} />
-        <meshBasicMaterial color="#5BC0EB" transparent opacity={0.06} side={THREE.BackSide} />
-      </mesh>
-    </group>
-  );
-}
-
-// ---------- Procedural Moon (high-detail, photoreal-ish) ----------
-function Moon({ scale = 1 }: { scale?: number }) {
-  const ref = useRef<THREE.Mesh>(null);
-  useFrame((_, dt) => {
-    if (ref.current) ref.current.rotation.y += dt * 0.012;
-  });
-
-  const moonMaterial = useMemo(() => {
+  // Atmospheric glow ring — sits behind the photo
+  const glowMaterial = useMemo(() => {
     return new THREE.ShaderMaterial({
+      transparent: true,
+      depthWrite: false,
+      blending: THREE.AdditiveBlending,
       vertexShader: `
-        varying vec3 vNormal;
-        varying vec3 vObjNormal;
-        varying vec3 vPos;
-        varying vec3 vViewDir;
+        varying vec2 vUv;
         void main() {
-          vNormal = normalize(normalMatrix * normal);
-          vObjNormal = normalize(normal);
-          vPos = position;
-          vec4 mv = modelViewMatrix * vec4(position, 1.0);
-          vViewDir = normalize(-mv.xyz);
-          gl_Position = projectionMatrix * mv;
+          vUv = uv;
+          gl_Position = projectionMatrix * modelViewMatrix * vec4(position, 1.0);
         }
       `,
       fragmentShader: `
         precision highp float;
-        varying vec3 vNormal;
-        varying vec3 vObjNormal;
-        varying vec3 vPos;
-        varying vec3 vViewDir;
-
-        // ---- Hash + value noise ----
-        float hash(vec3 p) {
-          p = fract(p * 0.3183099 + vec3(0.1, 0.2, 0.3));
-          p *= 17.0;
-          return fract(p.x * p.y * p.z * (p.x + p.y + p.z));
-        }
-        float noise(vec3 p) {
-          vec3 i = floor(p); vec3 f = fract(p); f = f*f*(3.0-2.0*f);
-          float n000 = hash(i);
-          float n100 = hash(i+vec3(1,0,0));
-          float n010 = hash(i+vec3(0,1,0));
-          float n110 = hash(i+vec3(1,1,0));
-          float n001 = hash(i+vec3(0,0,1));
-          float n101 = hash(i+vec3(1,0,1));
-          float n011 = hash(i+vec3(0,1,1));
-          float n111 = hash(i+vec3(1,1,1));
-          return mix(
-            mix(mix(n000,n100,f.x), mix(n010,n110,f.x), f.y),
-            mix(mix(n001,n101,f.x), mix(n011,n111,f.x), f.y),
-            f.z
-          );
-        }
-        float fbm(vec3 p) {
-          float v = 0.0; float a = 0.5;
-          for (int i = 0; i < 6; i++) { v += a * noise(p); p = p * 2.07 + 11.3; a *= 0.5; }
-          return v;
-        }
-
-        // ---- Voronoi for crater placement (returns distance + cell id) ----
-        vec2 voronoi(vec3 p) {
-          vec3 b = floor(p);
-          vec3 f = fract(p);
-          float minD = 1e9;
-          float id = 0.0;
-          for (int z=-1; z<=1; z++)
-          for (int y=-1; y<=1; y++)
-          for (int x=-1; x<=1; x++) {
-            vec3 g = vec3(float(x), float(y), float(z));
-            vec3 o = vec3(hash(b+g), hash(b+g+19.1), hash(b+g+47.7));
-            float d = length(g + o - f);
-            if (d < minD) { minD = d; id = hash(b+g+3.7); }
-          }
-          return vec2(minD, id);
-        }
-
-        // ---- Crater height field: layered voronoi at a few scales ----
-        float craterField(vec3 p) {
-          float h = 0.0;
-          // Big basins
-          vec2 v1 = voronoi(p * 1.6);
-          // Bowl shape: deep center, raised rim, fade outside
-          float r1 = v1.x;
-          float bowl1 = -smoothstep(0.0, 0.18, r1) * (1.0 - smoothstep(0.18, 0.30, r1));
-          float rim1  = smoothstep(0.18, 0.26, r1) * (1.0 - smoothstep(0.26, 0.42, r1));
-          h += (bowl1 * 0.55 + rim1 * 0.35) * step(0.4, v1.y); // only some cells are craters
-
-          // Medium craters
-          vec2 v2 = voronoi(p * 4.0 + 5.2);
-          float r2 = v2.x;
-          float bowl2 = -smoothstep(0.0, 0.14, r2) * (1.0 - smoothstep(0.14, 0.24, r2));
-          float rim2  = smoothstep(0.14, 0.20, r2) * (1.0 - smoothstep(0.20, 0.32, r2));
-          h += (bowl2 * 0.4 + rim2 * 0.28) * step(0.55, v2.y);
-
-          // Small pockmarks
-          vec2 v3 = voronoi(p * 10.0 + 17.0);
-          float r3 = v3.x;
-          float bowl3 = -smoothstep(0.0, 0.10, r3) * (1.0 - smoothstep(0.10, 0.18, r3));
-          h += bowl3 * 0.2 * step(0.5, v3.y);
-
-          // Tiny pockmarks for surface texture
-          vec2 v4 = voronoi(p * 24.0 + 31.5);
-          float r4 = v4.x;
-          h += -smoothstep(0.0, 0.06, r4) * (1.0 - smoothstep(0.06, 0.12, r4)) * 0.08
-               * step(0.55, v4.y);
-
-          return h;
-        }
-
-        float heightAt(vec3 p) {
-          // Combine fine fbm regolith + crater field
-          float regolith = (fbm(p * 6.0) - 0.5) * 0.06;
-          float micro    = (fbm(p * 18.0) - 0.5) * 0.025;
-          float craters  = craterField(p);
-          return regolith + micro + craters;
-        }
-
-        // Mare (dark basaltic plains) mask — large smooth low-frequency blobs
-        float mareMask(vec3 p) {
-          float m = fbm(p * 1.1 + 9.0);
-          return smoothstep(0.55, 0.72, m);
-        }
-
+        varying vec2 vUv;
         void main() {
-          // ---- Bump-mapped normal via finite differences in object space ----
-          float e = 0.0025;
-          vec3 px = normalize(vPos);
-          float h  = heightAt(px);
-          float hx = heightAt(normalize(px + vec3(e, 0.0, 0.0)));
-          float hy = heightAt(normalize(px + vec3(0.0, e, 0.0)));
-          float hz = heightAt(normalize(px + vec3(0.0, 0.0, e)));
-          vec3 grad = vec3(hx - h, hy - h, hz - h) / e;
-          // Project gradient onto tangent plane (object space)
-          vec3 tangentGrad = grad - dot(grad, vObjNormal) * vObjNormal;
-          // Perturb in object space, then transform to view space using vNormal/vObjNormal ratio
-          vec3 perturbedObj = normalize(vObjNormal - tangentGrad * 1.6);
-          // Approximate world-space perturbation by applying same delta to vNormal
-          vec3 deltaObj = perturbedObj - vObjNormal;
-          vec3 N = normalize(vNormal + deltaObj * length(vNormal));
-
-          // ---- Albedo ----
-          float mare = mareMask(px);
-          float regolith = fbm(px * 8.0);
-          // Highlands: warm bright grey; mare: cool dark basalt
-          vec3 highlandsLight = vec3(0.78, 0.74, 0.68);
-          vec3 highlandsDark  = vec3(0.55, 0.52, 0.48);
-          vec3 highlands = mix(highlandsDark, highlandsLight, regolith);
-          vec3 mareDark  = vec3(0.18, 0.18, 0.20);
-          vec3 mareLight = vec3(0.30, 0.29, 0.30);
-          vec3 mareColor = mix(mareDark, mareLight, regolith);
-          vec3 albedo = mix(highlands, mareColor, mare);
-
-          // Crater ejecta: brighten near steep rims
-          float rimBrightness = clamp(length(tangentGrad) * 0.6, 0.0, 0.4);
-          albedo += rimBrightness * 0.18;
-
-          // Subtle warm/cool variation
-          albedo *= 0.92 + 0.16 * fbm(px * 3.0);
-
-          // ---- Lighting (key sun + soft fill) ----
-          vec3 lightDir = normalize(vec3(0.85, 0.45, 0.55));
-          float NdotL = dot(N, lightDir);
-          // Sharp terminator with tiny softening for realism
-          float lambert = smoothstep(-0.05, 0.18, NdotL);
-
-          // Specular: regolith is rough — keep tiny
-          vec3 H = normalize(lightDir + vViewDir);
-          float spec = pow(max(dot(N, H), 0.0), 24.0) * 0.05;
-
-          // Fill: cool earthshine on the night side, very subtle
-          float backFill = smoothstep(0.0, -0.6, NdotL) * 0.06;
-          vec3 fill = vec3(0.22, 0.30, 0.45) * backFill;
-
-          // Ambient: extremely low (space)
-          float ambient = 0.025;
-
-          vec3 col = albedo * (lambert + ambient) + fill + vec3(spec);
-
-          // Tone & contrast
-          col = pow(col, vec3(0.95));
-          col = clamp(col, 0.0, 1.0);
-
-          gl_FragColor = vec4(col, 1.0);
+          vec2 c = vUv - 0.5;
+          float r = length(c) * 2.0;
+          // Bright thin rim right at the planet edge, fades outward
+          float rim = smoothstep(0.78, 0.92, r) * (1.0 - smoothstep(0.92, 1.15, r));
+          float halo = (1.0 - smoothstep(0.92, 1.4, r)) * 0.35;
+          float a = clamp(rim * 1.2 + halo, 0.0, 1.0);
+          vec3 col = mix(vec3(0.35, 0.65, 1.0), vec3(0.7, 0.85, 1.0), rim);
+          gl_FragColor = vec4(col, a);
         }
       `,
     });
   }, []);
 
   return (
-    <group scale={scale}>
-      <mesh ref={ref}>
-        <sphereGeometry args={[1, 192, 192]} />
-        <primitive object={moonMaterial} attach="material" />
-      </mesh>
-      {/* Faint outer glow so it pops off the starfield */}
-      <mesh scale={1.04}>
-        <sphereGeometry args={[1, 32, 32]} />
-        <meshBasicMaterial color="#cfd2d8" transparent opacity={0.04} side={THREE.BackSide} />
-      </mesh>
+    <group ref={groupRef} scale={scale}>
+      <Billboard follow>
+        {/* Atmospheric glow (slightly larger, behind) */}
+        <mesh position={[0, 0, -0.01]} scale={2.6}>
+          <planeGeometry args={[1, 1]} />
+          <primitive object={glowMaterial} attach="material" />
+        </mesh>
+        {/* Earth photo disc */}
+        <mesh scale={2}>
+          <planeGeometry args={[1, 1]} />
+          <primitive object={discMaterial} attach="material" />
+        </mesh>
+      </Billboard>
     </group>
   );
 }
+
+// ---------- Real-photo Moon (billboarded disc with subtle halo) ----------
+function Moon({ scale = 1 }: { scale?: number }) {
+  const groupRef = useRef<THREE.Group>(null);
+  const texture = useLoader(THREE.TextureLoader, "/textures/moon.webp");
+
+  useMemo(() => {
+    texture.colorSpace = THREE.SRGBColorSpace;
+    texture.anisotropy = 8;
+  }, [texture]);
+
+  const discMaterial = useMemo(() => {
+    return new THREE.ShaderMaterial({
+      transparent: true,
+      depthWrite: false,
+      uniforms: { uTex: { value: texture } },
+      vertexShader: `
+        varying vec2 vUv;
+        void main() {
+          vUv = uv;
+          gl_Position = projectionMatrix * modelViewMatrix * vec4(position, 1.0);
+        }
+      `,
+      fragmentShader: `
+        precision highp float;
+        varying vec2 vUv;
+        uniform sampler2D uTex;
+        void main() {
+          vec2 c = vUv - 0.5;
+          float r = length(c) * 2.0;
+          if (r > 1.0) discard;
+
+          vec4 tex = texture2D(uTex, vUv);
+          vec3 col = tex.rgb;
+
+          // Slight contrast lift so craters read clearly
+          col = (col - 0.5) * 1.08 + 0.5;
+          // Subtle warm tint to feel cinematic
+          col *= vec3(1.02, 1.0, 0.98);
+
+          // Anti-aliased circular mask
+          float alpha = smoothstep(1.0, 0.985, r);
+          gl_FragColor = vec4(col, alpha);
+        }
+      `,
+    });
+  }, [texture]);
+
+  // Faint cool halo around the moon — barely visible, pure cinematic touch
+  const haloMaterial = useMemo(() => {
+    return new THREE.ShaderMaterial({
+      transparent: true,
+      depthWrite: false,
+      blending: THREE.AdditiveBlending,
+      vertexShader: `
+        varying vec2 vUv;
+        void main() {
+          vUv = uv;
+          gl_Position = projectionMatrix * modelViewMatrix * vec4(position, 1.0);
+        }
+      `,
+      fragmentShader: `
+        precision highp float;
+        varying vec2 vUv;
+        void main() {
+          vec2 c = vUv - 0.5;
+          float r = length(c) * 2.0;
+          float halo = (1.0 - smoothstep(0.78, 1.25, r)) * 0.18;
+          float rim = smoothstep(0.74, 0.82, r) * (1.0 - smoothstep(0.82, 0.95, r)) * 0.25;
+          float a = clamp(halo + rim, 0.0, 1.0);
+          gl_FragColor = vec4(vec3(0.85, 0.88, 0.95), a);
+        }
+      `,
+    });
+  }, []);
+
+  return (
+    <group ref={groupRef} scale={scale}>
+      <Billboard follow>
+        <mesh position={[0, 0, -0.01]} scale={2.5}>
+          <planeGeometry args={[1, 1]} />
+          <primitive object={haloMaterial} attach="material" />
+        </mesh>
+        <mesh scale={2}>
+          <planeGeometry args={[1, 1]} />
+          <primitive object={discMaterial} attach="material" />
+        </mesh>
+      </Billboard>
+    </group>
+  );
+}
+
 
 // ---------- Orion ----------
 function Orion() {
