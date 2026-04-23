@@ -132,42 +132,40 @@ function HomePage() {
             </div>
           </section>
 
-          {/* SCENE 2 — Mission intro */}
+          {/* SCENE 2 — At the Moon */}
           <section className="flex h-screen items-center px-6">
             <div className="mx-auto max-w-6xl">
               <Reveal>
                 <div className="bg-background/30 max-w-xl rounded-lg p-2 backdrop-blur-sm md:ml-auto">
                   <p className="text-accent font-mono text-xs tracking-[0.4em] uppercase">
-                    Departure
+                    Lunar Flyby
                   </p>
                   <h2 className="mt-3 text-4xl font-bold sm:text-5xl">
-                    Leaving the cradle.
+                    4,600 miles past the far side.
                   </h2>
                   <p className="text-muted-foreground mt-4 leading-relaxed">
-                    Orion lifts off from Kennedy Space Center atop the Space Launch System — the
-                    most powerful rocket NASA has ever flown. After Earth orbit, an 18-minute burn
-                    sets a course for the Moon.
+                    On day four, Orion swings around the far side of the Moon — farther from
+                    Earth than any human has ever traveled.
                   </p>
                 </div>
               </Reveal>
             </div>
           </section>
 
-          {/* SCENE 3 — Trajectory */}
+          {/* SCENE 3 — Trajectory home */}
           <section className="flex h-screen items-center px-6">
             <div className="mx-auto max-w-6xl">
               <Reveal>
                 <div className="bg-background/30 max-w-xl rounded-lg p-2 backdrop-blur-sm">
                   <p className="text-accent font-mono text-xs tracking-[0.4em] uppercase">
-                    Trans-lunar Cruise
+                    Free-return Arc
                   </p>
                   <h2 className="mt-3 text-4xl font-bold sm:text-5xl">
-                    A free-return arc.
+                    Gravity does the work.
                   </h2>
                   <p className="text-muted-foreground mt-4 leading-relaxed">
-                    Gravity does the work. Orion coasts along a hybrid free-return trajectory that
-                    will sling the crew around the far side of the Moon and back to Earth without
-                    a single main-engine burn.
+                    A hybrid free-return trajectory slings the crew back toward Earth without a
+                    single main-engine burn — the safest possible path for a first crewed flight.
                   </p>
                 </div>
               </Reveal>
@@ -184,8 +182,8 @@ function HomePage() {
                   </p>
                   <h2 className="mt-3 text-4xl font-bold sm:text-5xl">Orion in deep space.</h2>
                   <p className="text-muted-foreground mt-4 leading-relaxed">
-                    Crew module, European Service Module, and a heat shield rated for lunar return
-                    velocities. Built to keep four humans alive ~230,000 miles from home.
+                    Crew module, European Service Module, and a heat shield rated for lunar
+                    return velocities. Built to keep four humans alive ~230,000 miles from home.
                   </p>
                   <Button asChild variant="link" className="text-accent mt-2 px-0">
                     <Link to="/spacecraft">
@@ -197,20 +195,20 @@ function HomePage() {
             </div>
           </section>
 
-          {/* SCENE 5 — Arrival at the Moon */}
+          {/* SCENE 5 — Arrival home: Earth */}
           <section className="flex h-screen items-center px-6">
             <div className="mx-auto max-w-6xl">
               <Reveal>
                 <div className="bg-background/30 max-w-xl rounded-lg p-2 backdrop-blur-sm">
                   <p className="text-accent font-mono text-xs tracking-[0.4em] uppercase">
-                    Lunar Flyby
+                    Splashdown
                   </p>
                   <h2 className="mt-3 text-4xl font-bold sm:text-5xl">
-                    4,600 miles past the far side.
+                    A blue marble, growing larger.
                   </h2>
                   <p className="text-muted-foreground mt-4 leading-relaxed">
-                    On day four, the crew passes farther from Earth than any human has ever
-                    traveled — then begins the long coast home.
+                    Ten days after liftoff, Orion re-enters at ~25,000 mph and splashes down in
+                    the Pacific — bringing the crew home and clearing the way for Artemis III.
                   </p>
                 </div>
               </Reveal>
