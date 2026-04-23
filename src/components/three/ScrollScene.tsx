@@ -1,6 +1,6 @@
 import { Suspense, useMemo, useRef } from "react";
 import { Canvas, useFrame } from "@react-three/fiber";
-import { Stars } from "@react-three/drei";
+import { Stars, PerspectiveCamera } from "@react-three/drei";
 import * as THREE from "three";
 import { Earth, Moon, Orion } from "./SpaceScene";
 
@@ -113,7 +113,7 @@ function Rig({ progressRef }: Props) {
 
   return (
     <>
-      <perspectiveCamera ref={cam} makeDefault fov={45} position={[0, 0, 5]} />
+      <PerspectiveCamera ref={cam} makeDefault fov={45} position={[0, 0, 5]} />
 
       <ambientLight intensity={0.18} />
       <directionalLight position={[6, 4, 6]} intensity={1.4} color="#fff7e6" />
