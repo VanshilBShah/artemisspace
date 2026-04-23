@@ -94,11 +94,6 @@ function Earth({ scale = 1 }: { scale?: number }) {
         />
       </mesh>
 
-      {/* Atmosphere glow (slightly larger inverted sphere) */}
-      <mesh scale={1.18}>
-        <sphereGeometry args={[1, 64, 64]} />
-        <primitive object={atmosphereMat} attach="material" />
-      </mesh>
     </group>
   );
 }
@@ -167,11 +162,6 @@ function Moon({ scale = 1 }: { scale?: number }) {
         />
       </mesh>
 
-      {/* Subtle halo */}
-      <mesh scale={1.12}>
-        <sphereGeometry args={[1, 48, 48]} />
-        <primitive object={haloMat} attach="material" />
-      </mesh>
     </group>
   );
 }
