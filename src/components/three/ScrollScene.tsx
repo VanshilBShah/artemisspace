@@ -114,9 +114,9 @@ function Rig({ progressRef }: Props) {
     <>
       <PerspectiveCamera ref={cam} makeDefault fov={45} position={[0, 0, 5]} />
 
-      <ambientLight intensity={0.08} />
-      <directionalLight position={[6, 4, 6]} intensity={1.8} color="#fff5e0" />
-      <pointLight position={[-8, -3, -4]} intensity={0.4} color="#5BC0EB" />
+      <ambientLight intensity={0.05} />
+      <directionalLight position={[5, 2, 4]} intensity={2.2} color="#fff5e0" castShadow />
+      <pointLight position={[-8, -3, -4]} intensity={0.3} color="#5BC0EB" />
 
       <Stars radius={120} depth={80} count={6000} factor={3.5} fade speed={0.5} />
 
