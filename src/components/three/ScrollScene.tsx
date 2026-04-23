@@ -31,7 +31,7 @@ function Rig({ progressRef }: Props) {
   const trajRef = useRef<THREE.Line>(null);
   const smoothed = useRef(0);
 
-  // Trajectory curve from Earth (left) to Moon (right)
+  // Trajectory curve from Moon (left, hero) to Earth (right, destination)
   const curve = useMemo(() => {
     return new THREE.CatmullRomCurve3([
       new THREE.Vector3(-3, 0, 0),
@@ -49,30 +49,29 @@ function Rig({ progressRef }: Props) {
     return g;
   }, [curve]);
 
-  useFrame((state, dt) => {
+  useFrame((_state, dt) => {
     // Smooth scroll progress
     const target = progressRef.current;
     smoothed.current = lerp(smoothed.current, target, Math.min(1, dt * 4));
     const p = smoothed.current;
 
-    // Earth: starts large + centered, drifts left & shrinks
-    if (earthGroup.current) {
-      const s = lerp(2.4, 0.7, ease(clamp(p / 0.5)));
-      earthGroup.current.scale.setScalar(s);
-      earthGroup.current.position.x = lerp(0, -3.2, ease(clamp(p / 0.6)));
-      earthGroup.current.position.y = lerp(0, 0.2, ease(clamp(p / 0.6)));
-      // fade out at the end
-      const opacity = 1 - ease(clamp((p - 0.7) / 0.3));
-      earthGroup.current.visible = opacity > 0.01;
+    // Moon: HERO — starts huge & centered, drifts left and shrinks slightly as we travel away
+    if (moonGroup.current) {
+      const s = lerp(2.6, 0.9, ease(clamp(p / 0.7)));
+      moonGroup.current.scale.setScalar(s);
+      moonGroup.current.position.x = lerp(0, -3.2, ease(clamp(p / 0.7)));
+      moonGroup.current.position.y = lerp(0, 0.2, ease(clamp(p / 0.7)));
+      const opacity = 1 - ease(clamp((p - 0.85) / 0.15));
+      moonGroup.current.visible = opacity > 0.01;
     }
 
-    // Moon: enters from right, grows
-    if (moonGroup.current) {
-      const enter = ease(clamp((p - 0.25) / 0.55));
-      const s = lerp(0.25, 2.2, enter);
-      moonGroup.current.scale.setScalar(s);
-      moonGroup.current.position.x = lerp(5.5, 1.2, enter);
-      moonGroup.current.position.y = lerp(0.4, -0.1, enter);
+    // Earth: enters from the right, grows as the spacecraft heads home
+    if (earthGroup.current) {
+      const enter = ease(clamp((p - 0.25) / 0.65));
+      const s = lerp(0.25, 1.9, enter);
+      earthGroup.current.scale.setScalar(s);
+      earthGroup.current.position.x = lerp(5.5, 1.4, enter);
+      earthGroup.current.position.y = lerp(0.4, -0.1, enter);
     }
 
     // Trajectory: draws between p≈0.25 and p≈0.7
@@ -115,9 +114,9 @@ function Rig({ progressRef }: Props) {
     <>
       <PerspectiveCamera ref={cam} makeDefault fov={45} position={[0, 0, 5]} />
 
-      <ambientLight intensity={0.18} />
-      <directionalLight position={[6, 4, 6]} intensity={1.4} color="#fff7e6" />
-      <pointLight position={[-8, -3, -4]} intensity={0.6} color="#5BC0EB" />
+      <ambientLight intensity={0.08} />
+      <directionalLight position={[6, 4, 6]} intensity={1.8} color="#fff5e0" />
+      <pointLight position={[-8, -3, -4]} intensity={0.4} color="#5BC0EB" />
 
       <Stars radius={120} depth={80} count={6000} factor={3.5} fade speed={0.5} />
 
