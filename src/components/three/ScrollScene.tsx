@@ -57,7 +57,7 @@ function Rig({ progressRef }: Props) {
 
     // Moon: HERO — starts huge & centered, drifts left and shrinks slightly as we travel away
     if (moonGroup.current) {
-      const s = lerp(2.6, 0.9, ease(clamp(p / 0.7)));
+      const s = lerp(2.2, 0.7, ease(clamp(p / 0.7)));
       moonGroup.current.scale.setScalar(s);
       moonGroup.current.position.x = lerp(0, -3.2, ease(clamp(p / 0.7)));
       moonGroup.current.position.y = lerp(0, 0.2, ease(clamp(p / 0.7)));
@@ -68,7 +68,7 @@ function Rig({ progressRef }: Props) {
     // Earth: enters from the right, grows as the spacecraft heads home
     if (earthGroup.current) {
       const enter = ease(clamp((p - 0.25) / 0.65));
-      const s = lerp(0.25, 1.9, enter);
+      const s = lerp(0.2, 1.6, enter);
       earthGroup.current.scale.setScalar(s);
       earthGroup.current.position.x = lerp(5.5, 1.4, enter);
       earthGroup.current.position.y = lerp(0.4, -0.1, enter);
