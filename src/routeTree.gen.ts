@@ -9,8 +9,32 @@
 // Additionally, you should also exclude this file from your linter and/or formatter to prevent it from being checked or modified.
 
 import { Route as rootRouteImport } from './routes/__root'
+import { Route as SpacecraftRouteImport } from './routes/spacecraft'
+import { Route as ProgressRouteImport } from './routes/progress'
+import { Route as MissionRouteImport } from './routes/mission'
+import { Route as CrewRouteImport } from './routes/crew'
 import { Route as IndexRouteImport } from './routes/index'
 
+const SpacecraftRoute = SpacecraftRouteImport.update({
+  id: '/spacecraft',
+  path: '/spacecraft',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const ProgressRoute = ProgressRouteImport.update({
+  id: '/progress',
+  path: '/progress',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const MissionRoute = MissionRouteImport.update({
+  id: '/mission',
+  path: '/mission',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const CrewRoute = CrewRouteImport.update({
+  id: '/crew',
+  path: '/crew',
+  getParentRoute: () => rootRouteImport,
+} as any)
 const IndexRoute = IndexRouteImport.update({
   id: '/',
   path: '/',
@@ -19,28 +43,72 @@ const IndexRoute = IndexRouteImport.update({
 
 export interface FileRoutesByFullPath {
   '/': typeof IndexRoute
+  '/crew': typeof CrewRoute
+  '/mission': typeof MissionRoute
+  '/progress': typeof ProgressRoute
+  '/spacecraft': typeof SpacecraftRoute
 }
 export interface FileRoutesByTo {
   '/': typeof IndexRoute
+  '/crew': typeof CrewRoute
+  '/mission': typeof MissionRoute
+  '/progress': typeof ProgressRoute
+  '/spacecraft': typeof SpacecraftRoute
 }
 export interface FileRoutesById {
   __root__: typeof rootRouteImport
   '/': typeof IndexRoute
+  '/crew': typeof CrewRoute
+  '/mission': typeof MissionRoute
+  '/progress': typeof ProgressRoute
+  '/spacecraft': typeof SpacecraftRoute
 }
 export interface FileRouteTypes {
   fileRoutesByFullPath: FileRoutesByFullPath
-  fullPaths: '/'
+  fullPaths: '/' | '/crew' | '/mission' | '/progress' | '/spacecraft'
   fileRoutesByTo: FileRoutesByTo
-  to: '/'
-  id: '__root__' | '/'
+  to: '/' | '/crew' | '/mission' | '/progress' | '/spacecraft'
+  id: '__root__' | '/' | '/crew' | '/mission' | '/progress' | '/spacecraft'
   fileRoutesById: FileRoutesById
 }
 export interface RootRouteChildren {
   IndexRoute: typeof IndexRoute
+  CrewRoute: typeof CrewRoute
+  MissionRoute: typeof MissionRoute
+  ProgressRoute: typeof ProgressRoute
+  SpacecraftRoute: typeof SpacecraftRoute
 }
 
 declare module '@tanstack/react-router' {
   interface FileRoutesByPath {
+    '/spacecraft': {
+      id: '/spacecraft'
+      path: '/spacecraft'
+      fullPath: '/spacecraft'
+      preLoaderRoute: typeof SpacecraftRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/progress': {
+      id: '/progress'
+      path: '/progress'
+      fullPath: '/progress'
+      preLoaderRoute: typeof ProgressRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/mission': {
+      id: '/mission'
+      path: '/mission'
+      fullPath: '/mission'
+      preLoaderRoute: typeof MissionRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/crew': {
+      id: '/crew'
+      path: '/crew'
+      fullPath: '/crew'
+      preLoaderRoute: typeof CrewRouteImport
+      parentRoute: typeof rootRouteImport
+    }
     '/': {
       id: '/'
       path: '/'
@@ -53,7 +121,20 @@ declare module '@tanstack/react-router' {
 
 const rootRouteChildren: RootRouteChildren = {
   IndexRoute: IndexRoute,
+  CrewRoute: CrewRoute,
+  MissionRoute: MissionRoute,
+  ProgressRoute: ProgressRoute,
+  SpacecraftRoute: SpacecraftRoute,
 }
 export const routeTree = rootRouteImport
   ._addFileChildren(rootRouteChildren)
   ._addFileTypes<FileRouteTypes>()
+
+import type { getRouter } from './router.tsx'
+import type { createStart } from '@tanstack/react-start'
+declare module '@tanstack/react-start' {
+  interface Register {
+    ssr: true
+    router: Awaited<ReturnType<typeof getRouter>>
+  }
+}
