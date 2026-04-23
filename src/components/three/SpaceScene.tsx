@@ -162,11 +162,6 @@ function Moon({ scale = 1 }: { scale?: number }) {
         />
       </mesh>
 
-      {/* Subtle halo */}
-      <mesh scale={1.12}>
-        <sphereGeometry args={[1, 48, 48]} />
-        <primitive object={haloMat} attach="material" />
-      </mesh>
     </group>
   );
 }
