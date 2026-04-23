@@ -1,201 +1,180 @@
 import { useRef, useMemo, Suspense } from "react";
 import { Canvas, useFrame, useLoader } from "@react-three/fiber";
-import { Stars, Float, Billboard } from "@react-three/drei";
+import { Stars, Float } from "@react-three/drei";
 import * as THREE from "three";
 
-// ---------- Real-photo Earth (billboarded disc with atmospheric glow) ----------
+// ---------- Photoreal Earth (real sphere with day/normal/specular + clouds + atmosphere) ----------
 function Earth({ scale = 1 }: { scale?: number }) {
   const groupRef = useRef<THREE.Group>(null);
-  const texture = useLoader(THREE.TextureLoader, "/textures/earth.avif");
+  const earthRef = useRef<THREE.Mesh>(null);
+  const cloudsRef = useRef<THREE.Mesh>(null);
+
+  const [colorMap, normalMap, specularMap, cloudsMap] = useLoader(THREE.TextureLoader, [
+    "/textures/earth_2k.jpg",
+    "/textures/earth_normal.jpg",
+    "/textures/earth_specular.jpg",
+    "/textures/earth_clouds.png",
+  ]);
 
   useMemo(() => {
-    texture.colorSpace = THREE.SRGBColorSpace;
-    texture.anisotropy = 8;
-  }, [texture]);
-
-  // Custom shader: render the photo as a circular disc with darkened edges removed,
-  // add a cyan atmospheric rim that fades outward.
-  const discMaterial = useMemo(() => {
-    return new THREE.ShaderMaterial({
-      transparent: true,
-      depthWrite: false,
-      uniforms: {
-        uTex: { value: texture },
-      },
-      vertexShader: `
-        varying vec2 vUv;
-        void main() {
-          vUv = uv;
-          gl_Position = projectionMatrix * modelViewMatrix * vec4(position, 1.0);
-        }
-      `,
-      fragmentShader: `
-        precision highp float;
-        varying vec2 vUv;
-        uniform sampler2D uTex;
-        void main() {
-          // Distance from center for circular masking
-          vec2 c = vUv - 0.5;
-          float r = length(c) * 2.0;
-          if (r > 1.0) discard;
-
-          // Sample photo
-          vec4 tex = texture2D(uTex, vUv);
-
-          // Boost saturation/contrast slightly so it pops on dark space
-          vec3 col = tex.rgb;
-          float luma = dot(col, vec3(0.299, 0.587, 0.114));
-          col = mix(vec3(luma), col, 1.15);
-          col *= 1.05;
-
-          // Soft alpha falloff at the very edge for clean anti-aliasing
-          float alpha = smoothstep(1.0, 0.985, r);
-
-          gl_FragColor = vec4(col, alpha);
-        }
-      `,
+    [colorMap, cloudsMap].forEach((t) => {
+      t.colorSpace = THREE.SRGBColorSpace;
+      t.anisotropy = 8;
     });
-  }, [texture]);
-
-  // Atmospheric glow ring — sits behind the photo
-  const glowMaterial = useMemo(() => {
-    return new THREE.ShaderMaterial({
-      transparent: true,
-      depthWrite: false,
-      blending: THREE.AdditiveBlending,
-      vertexShader: `
-        varying vec2 vUv;
-        void main() {
-          vUv = uv;
-          gl_Position = projectionMatrix * modelViewMatrix * vec4(position, 1.0);
-        }
-      `,
-      fragmentShader: `
-        precision highp float;
-        varying vec2 vUv;
-        void main() {
-          vec2 c = vUv - 0.5;
-          float r = length(c) * 2.0;
-          // Bright thin rim right at the planet edge, fades outward
-          float rim = smoothstep(0.78, 0.92, r) * (1.0 - smoothstep(0.92, 1.15, r));
-          float halo = (1.0 - smoothstep(0.92, 1.4, r)) * 0.35;
-          float a = clamp(rim * 1.2 + halo, 0.0, 1.0);
-          vec3 col = mix(vec3(0.35, 0.65, 1.0), vec3(0.7, 0.85, 1.0), rim);
-          gl_FragColor = vec4(col, a);
-        }
-      `,
+    [normalMap, specularMap].forEach((t) => {
+      t.anisotropy = 8;
     });
-  }, []);
+  }, [colorMap, normalMap, specularMap, cloudsMap]);
+
+  // Atmospheric glow shader (Fresnel rim)
+  const atmosphereMat = useMemo(
+    () =>
+      new THREE.ShaderMaterial({
+        transparent: true,
+        depthWrite: false,
+        blending: THREE.AdditiveBlending,
+        side: THREE.BackSide,
+        uniforms: {
+          uColor: { value: new THREE.Color("#5BC0EB") },
+        },
+        vertexShader: `
+          varying vec3 vNormal;
+          varying vec3 vPos;
+          void main() {
+            vNormal = normalize(normalMatrix * normal);
+            vec4 mv = modelViewMatrix * vec4(position, 1.0);
+            vPos = mv.xyz;
+            gl_Position = projectionMatrix * mv;
+          }
+        `,
+        fragmentShader: `
+          precision highp float;
+          varying vec3 vNormal;
+          varying vec3 vPos;
+          uniform vec3 uColor;
+          void main() {
+            vec3 viewDir = normalize(-vPos);
+            float fres = pow(1.0 - max(dot(vNormal, viewDir), 0.0), 2.5);
+            float a = clamp(fres, 0.0, 1.0) * 0.9;
+            gl_FragColor = vec4(uColor, a);
+          }
+        `,
+      }),
+    []
+  );
+
+  useFrame((_, dt) => {
+    if (earthRef.current) earthRef.current.rotation.y += dt * 0.04;
+    if (cloudsRef.current) cloudsRef.current.rotation.y += dt * 0.055;
+  });
 
   return (
     <group ref={groupRef} scale={scale}>
-      <Billboard follow>
-        {/* Atmospheric glow (slightly larger, behind) */}
-        <mesh position={[0, 0, -0.01]} scale={2.6}>
-          <planeGeometry args={[1, 1]} />
-          <primitive object={glowMaterial} attach="material" />
-        </mesh>
-        {/* Earth photo disc */}
-        <mesh scale={2}>
-          <planeGeometry args={[1, 1]} />
-          <primitive object={discMaterial} attach="material" />
-        </mesh>
-      </Billboard>
+      {/* Earth surface */}
+      <mesh ref={earthRef} rotation={[0, 0, THREE.MathUtils.degToRad(-23.5)]}>
+        <sphereGeometry args={[1, 96, 96]} />
+        <meshPhongMaterial
+          map={colorMap}
+          normalMap={normalMap}
+          normalScale={new THREE.Vector2(0.85, 0.85)}
+          specularMap={specularMap}
+          specular={new THREE.Color("#3a5a80")}
+          shininess={18}
+        />
+      </mesh>
+
+      {/* Cloud layer */}
+      <mesh ref={cloudsRef} rotation={[0, 0, THREE.MathUtils.degToRad(-23.5)]}>
+        <sphereGeometry args={[1.012, 64, 64]} />
+        <meshPhongMaterial
+          map={cloudsMap}
+          transparent
+          opacity={0.55}
+          depthWrite={false}
+        />
+      </mesh>
+
+      {/* Atmosphere glow (slightly larger inverted sphere) */}
+      <mesh scale={1.18}>
+        <sphereGeometry args={[1, 64, 64]} />
+        <primitive object={atmosphereMat} attach="material" />
+      </mesh>
     </group>
   );
 }
 
-// ---------- Real-photo Moon (billboarded disc with subtle halo) ----------
+// ---------- Photoreal Moon (real sphere with NASA color map + bump + subtle halo) ----------
 function Moon({ scale = 1 }: { scale?: number }) {
   const groupRef = useRef<THREE.Group>(null);
-  const texture = useLoader(THREE.TextureLoader, "/textures/moon.webp");
+  const moonRef = useRef<THREE.Mesh>(null);
+
+  const colorMap = useLoader(THREE.TextureLoader, "/textures/moon_2k.jpg");
 
   useMemo(() => {
-    texture.colorSpace = THREE.SRGBColorSpace;
-    texture.anisotropy = 8;
-  }, [texture]);
+    colorMap.colorSpace = THREE.SRGBColorSpace;
+    colorMap.anisotropy = 8;
+  }, [colorMap]);
 
-  const discMaterial = useMemo(() => {
-    return new THREE.ShaderMaterial({
-      transparent: true,
-      depthWrite: false,
-      uniforms: { uTex: { value: texture } },
-      vertexShader: `
-        varying vec2 vUv;
-        void main() {
-          vUv = uv;
-          gl_Position = projectionMatrix * modelViewMatrix * vec4(position, 1.0);
-        }
-      `,
-      fragmentShader: `
-        precision highp float;
-        varying vec2 vUv;
-        uniform sampler2D uTex;
-        void main() {
-          vec2 c = vUv - 0.5;
-          float r = length(c) * 2.0;
-          if (r > 1.0) discard;
+  // Faint cool halo (Fresnel)
+  const haloMat = useMemo(
+    () =>
+      new THREE.ShaderMaterial({
+        transparent: true,
+        depthWrite: false,
+        blending: THREE.AdditiveBlending,
+        side: THREE.BackSide,
+        uniforms: { uColor: { value: new THREE.Color("#aab8d4") } },
+        vertexShader: `
+          varying vec3 vNormal;
+          varying vec3 vPos;
+          void main() {
+            vNormal = normalize(normalMatrix * normal);
+            vec4 mv = modelViewMatrix * vec4(position, 1.0);
+            vPos = mv.xyz;
+            gl_Position = projectionMatrix * mv;
+          }
+        `,
+        fragmentShader: `
+          precision highp float;
+          varying vec3 vNormal;
+          varying vec3 vPos;
+          uniform vec3 uColor;
+          void main() {
+            vec3 viewDir = normalize(-vPos);
+            float fres = pow(1.0 - max(dot(vNormal, viewDir), 0.0), 3.0);
+            float a = clamp(fres, 0.0, 1.0) * 0.35;
+            gl_FragColor = vec4(uColor, a);
+          }
+        `,
+      }),
+    []
+  );
 
-          vec4 tex = texture2D(uTex, vUv);
-          vec3 col = tex.rgb;
-
-          // Slight contrast lift so craters read clearly
-          col = (col - 0.5) * 1.08 + 0.5;
-          // Subtle warm tint to feel cinematic
-          col *= vec3(1.02, 1.0, 0.98);
-
-          // Anti-aliased circular mask
-          float alpha = smoothstep(1.0, 0.985, r);
-          gl_FragColor = vec4(col, alpha);
-        }
-      `,
-    });
-  }, [texture]);
-
-  // Faint cool halo around the moon — barely visible, pure cinematic touch
-  const haloMaterial = useMemo(() => {
-    return new THREE.ShaderMaterial({
-      transparent: true,
-      depthWrite: false,
-      blending: THREE.AdditiveBlending,
-      vertexShader: `
-        varying vec2 vUv;
-        void main() {
-          vUv = uv;
-          gl_Position = projectionMatrix * modelViewMatrix * vec4(position, 1.0);
-        }
-      `,
-      fragmentShader: `
-        precision highp float;
-        varying vec2 vUv;
-        void main() {
-          vec2 c = vUv - 0.5;
-          float r = length(c) * 2.0;
-          float halo = (1.0 - smoothstep(0.78, 1.25, r)) * 0.18;
-          float rim = smoothstep(0.74, 0.82, r) * (1.0 - smoothstep(0.82, 0.95, r)) * 0.25;
-          float a = clamp(halo + rim, 0.0, 1.0);
-          gl_FragColor = vec4(vec3(0.85, 0.88, 0.95), a);
-        }
-      `,
-    });
-  }, []);
+  useFrame((_, dt) => {
+    if (moonRef.current) moonRef.current.rotation.y += dt * 0.02;
+  });
 
   return (
     <group ref={groupRef} scale={scale}>
-      <Billboard follow>
-        <mesh position={[0, 0, -0.01]} scale={2.5}>
-          <planeGeometry args={[1, 1]} />
-          <primitive object={haloMaterial} attach="material" />
-        </mesh>
-        <mesh scale={2}>
-          <planeGeometry args={[1, 1]} />
-          <primitive object={discMaterial} attach="material" />
-        </mesh>
-      </Billboard>
+      <mesh ref={moonRef}>
+        <sphereGeometry args={[1, 96, 96]} />
+        <meshStandardMaterial
+          map={colorMap}
+          bumpMap={colorMap}
+          bumpScale={0.04}
+          roughness={0.95}
+          metalness={0.0}
+        />
+      </mesh>
+
+      {/* Subtle halo */}
+      <mesh scale={1.12}>
+        <sphereGeometry args={[1, 48, 48]} />
+        <primitive object={haloMat} attach="material" />
+      </mesh>
     </group>
   );
 }
-
 
 // ---------- Orion ----------
 function Orion() {
@@ -242,12 +221,12 @@ function SimpleScene({ variant }: Props) {
   return (
     <>
       <ambientLight intensity={0.15} />
-      <directionalLight position={[5, 3, 5]} intensity={1.2} color="#fff7e6" />
-      <pointLight position={[-5, -2, -3]} intensity={0.5} color="#5BC0EB" />
+      <directionalLight position={[5, 3, 5]} intensity={1.6} color="#fff7e6" />
+      <pointLight position={[-5, -2, -3]} intensity={0.4} color="#5BC0EB" />
       <Stars radius={80} depth={60} count={4000} factor={3} fade speed={0.6} />
-      {variant === "earth" && <Earth scale={2.2} />}
+      {variant === "earth" && <Earth scale={1.6} />}
       {variant === "spacecraft" && <Orion />}
-      {variant === "moon" && <Moon scale={1.4} />}
+      {variant === "moon" && <Moon scale={1.6} />}
     </>
   );
 }
@@ -255,8 +234,8 @@ function SimpleScene({ variant }: Props) {
 export function SpaceScene({ variant }: Props) {
   return (
     <Canvas
-      camera={{ position: [0, 0, variant === "spacecraft" ? 3 : 4.5], fov: 50 }}
-      dpr={[1, 1.6]}
+      camera={{ position: [0, 0, variant === "spacecraft" ? 3 : 4], fov: 45 }}
+      dpr={[1, 1.75]}
       gl={{ antialias: true, alpha: true }}
       style={{ background: "transparent" }}
     >
