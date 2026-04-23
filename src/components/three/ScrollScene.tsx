@@ -57,7 +57,7 @@ function Rig({ progressRef }: Props) {
 
     // Moon: HERO — starts huge & centered, drifts left and shrinks slightly as we travel away
     if (moonGroup.current) {
-      const s = lerp(2.6, 0.9, ease(clamp(p / 0.7)));
+      const s = lerp(2.2, 0.7, ease(clamp(p / 0.7)));
       moonGroup.current.scale.setScalar(s);
       moonGroup.current.position.x = lerp(0, -3.2, ease(clamp(p / 0.7)));
       moonGroup.current.position.y = lerp(0, 0.2, ease(clamp(p / 0.7)));
@@ -68,7 +68,7 @@ function Rig({ progressRef }: Props) {
     // Earth: enters from the right, grows as the spacecraft heads home
     if (earthGroup.current) {
       const enter = ease(clamp((p - 0.25) / 0.65));
-      const s = lerp(0.25, 1.9, enter);
+      const s = lerp(0.2, 1.6, enter);
       earthGroup.current.scale.setScalar(s);
       earthGroup.current.position.x = lerp(5.5, 1.4, enter);
       earthGroup.current.position.y = lerp(0.4, -0.1, enter);
@@ -114,9 +114,9 @@ function Rig({ progressRef }: Props) {
     <>
       <PerspectiveCamera ref={cam} makeDefault fov={45} position={[0, 0, 5]} />
 
-      <ambientLight intensity={0.08} />
-      <directionalLight position={[6, 4, 6]} intensity={1.8} color="#fff5e0" />
-      <pointLight position={[-8, -3, -4]} intensity={0.4} color="#5BC0EB" />
+      <ambientLight intensity={0.05} />
+      <directionalLight position={[5, 2, 4]} intensity={2.2} color="#fff5e0" castShadow />
+      <pointLight position={[-8, -3, -4]} intensity={0.3} color="#5BC0EB" />
 
       <Stars radius={120} depth={80} count={6000} factor={3.5} fade speed={0.5} />
 
