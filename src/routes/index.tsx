@@ -107,19 +107,14 @@ function HomePage() {
                 </p>
               </Reveal>
               <Reveal delay={600}>
-                <div className="pointer-events-auto mt-10 flex flex-wrap justify-center gap-3">
-                  <Button asChild size="lg" className="bg-primary hover:bg-primary/80 group">
+                <div className="pointer-events-auto mt-10 flex flex-wrap justify-center gap-4">
+                  <Button asChild size="lg" variant="minimal-accent" className="group h-11 px-7">
                     <Link to="/mission">
                       Explore the Mission
-                      <ArrowRight className="ml-1 transition-transform group-hover:translate-x-1" />
+                      <ArrowRight className="ml-1 h-4 w-4 transition-transform group-hover:translate-x-1" />
                     </Link>
                   </Button>
-                  <Button
-                    asChild
-                    size="lg"
-                    variant="outline"
-                    className="border-accent/40 text-accent hover:bg-accent/10"
-                  >
+                  <Button asChild size="lg" variant="minimal" className="h-11 px-7">
                     <Link to="/progress">Mission Status</Link>
                   </Button>
                 </div>
@@ -185,9 +180,10 @@ function HomePage() {
                     Crew module, European Service Module, and a heat shield rated for lunar
                     return velocities. Built to keep four humans alive ~230,000 miles from home.
                   </p>
-                  <Button asChild variant="link" className="text-accent mt-2 px-0">
+                  <Button asChild variant="minimal-ghost" className="mt-4 h-auto px-0 group">
                     <Link to="/spacecraft">
-                      Explore the hardware <ArrowRight className="ml-1 h-4 w-4" />
+                      Explore the hardware
+                      <ArrowRight className="ml-1 h-3 w-3 transition-transform group-hover:translate-x-1" />
                     </Link>
                   </Button>
                 </div>
@@ -233,9 +229,10 @@ function HomePage() {
               of the Moon on a free-return trajectory — confirming that every Artemis system is
               ready for humans before the lunar landing on Artemis III.
             </p>
-            <Button asChild variant="link" className="text-accent mt-4 px-0">
+            <Button asChild variant="minimal-ghost" className="mt-6 h-auto px-0 group">
               <Link to="/mission">
-                Read the full profile <ArrowRight className="ml-1 h-4 w-4" />
+                Read the full profile
+                <ArrowRight className="ml-1 h-3 w-3 transition-transform group-hover:translate-x-1" />
               </Link>
             </Button>
           </Reveal>
@@ -329,16 +326,11 @@ function HomePage() {
               From wet dress rehearsal to liftoff — follow the live mission status, the integrated
               vehicle, and the four humans who will fly it.
             </p>
-            <div className="mt-8 flex flex-wrap justify-center gap-3">
-              <Button asChild size="lg" className="bg-primary hover:bg-primary/80">
+            <div className="mt-8 flex flex-wrap justify-center gap-4">
+              <Button asChild size="lg" variant="minimal-accent" className="h-11 px-7">
                 <Link to="/progress">Mission Progress</Link>
               </Button>
-              <Button
-                asChild
-                size="lg"
-                variant="outline"
-                className="border-accent/40 text-accent hover:bg-accent/10"
-              >
+              <Button asChild size="lg" variant="minimal" className="h-11 px-7">
                 <Link to="/crew">Meet the Crew</Link>
               </Button>
             </div>
