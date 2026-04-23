@@ -16,6 +16,13 @@ const buttonVariants = cva(
         secondary: "bg-secondary text-secondary-foreground shadow-sm hover:bg-secondary/80",
         ghost: "hover:bg-accent hover:text-accent-foreground",
         link: "text-primary underline-offset-4 hover:underline",
+        // Minimal aesthetic variants tuned for the Artemis II deep-space theme
+        minimal:
+          "border border-foreground/20 bg-transparent text-foreground/90 hover:border-accent/70 hover:text-accent backdrop-blur-sm transition-colors duration-300 font-mono text-xs tracking-[0.25em] uppercase rounded-none",
+        "minimal-accent":
+          "border border-accent/40 bg-accent/[0.04] text-accent hover:bg-accent/10 hover:border-accent backdrop-blur-sm transition-colors duration-300 font-mono text-xs tracking-[0.25em] uppercase rounded-none",
+        "minimal-ghost":
+          "bg-transparent text-foreground/80 hover:text-accent transition-colors duration-300 font-mono text-xs tracking-[0.25em] uppercase",
       },
       size: {
         default: "h-9 px-4 py-2",
